@@ -1,0 +1,445 @@
+<?xml version="1.0" encoding="utf-8"?>
+<executable>
+
+  <!-- MODULE INFO -->
+    <category>TFM</category>
+    <title>Breast deformation CLI</title>
+    <description>
+      Breast deformation module for tumor position estimation in breast cancer surgery.
+    </description>
+    <documentation-url>
+      http://www.slicer.org/slicerWiki/index.php/Documentation/Nightly/Extensions/MatlabBridge
+    </documentation-url>
+    <license/>
+    <contributor>Fernando Perez-Garcia (fepegar@gmail.com)</contributor>
+    <acknowledgements>
+      This module is part of a master's thesis at the group of
+      Biomedical Imaging Technologies of the Universidad Politecnica de Madrid
+    </acknowledgements>
+
+
+
+  <!-- INPUT -->
+ 
+  <!-- Prone -->
+    <parameters advanced="true">
+      <label>Prone data</label>
+
+      <point multiple="true">
+        <label>Nipples fiducials list</label>
+        <longflag>mrFiducials</longflag>
+        <description>First fiducial must be the right nipple</description>
+      </point>
+
+      <string-enumeration>
+        <label>Choose a source for the surface mesh</label>
+        <longflag>mrMeshEnumeration</longflag>
+        <default>A: use existing mesh</default>
+        <element>A: use existing mesh</element>
+        <element>B: generate mesh from input volume</element>
+      </string-enumeration>
+
+      <geometry fileExtensions=".ply">
+        <label>A: input surface</label>
+        <description>
+          Surface extracted from skin segmentation. It should contain only one connected component
+        </description>
+        <longflag>mrSurfaceMeshIn</longflag>
+        <channel>input</channel>
+      </geometry>
+
+      <image>
+        <label>B: input volume</label>
+        <description>
+          High contrast between skin and air is preferred
+        </description>
+        <longflag>mrInputVolume</longflag>
+        <channel>input</channel>
+      </image>
+
+      <region>
+        <label>B: ROI</label>
+        <description>
+          Slicer annotation node. It is recommended to use the Volume Rendering module to create it
+        </description>
+        <longflag>mrROI</longflag>
+      </region>
+
+      <boolean>
+        <label>Subsample mesh</label>
+        <description>
+          Choose whether you want to subsample the mesh in order to reduce computation time or not
+        </description>
+        <longflag>mrResample</longflag>
+        <default>false</default>
+      </boolean>
+
+      <double>
+        <label>Final number of nodes</label>
+        <description>
+          Approximated final number of nodes after subsampling
+        </description>
+        <longflag>mrNumberOfNodes</longflag>
+        <default>10000</default>
+        <constraints>
+          <minimum>1000</minimum>
+          <maximum>1.e5</maximum>
+          <step>1000</step>
+        </constraints>
+      </double>
+
+      <string-enumeration>
+        <label>Tumor visualization</label>
+        <description>
+          Choose whether you want to use a mesh from the MRI tumor segmentation or enter the position using a fiducial and visualize it as a sphere
+        </description>
+        <longflag>mrTumorType</longflag>
+        <default>A: mesh from segmentation</default>
+        <element>A: mesh from segmentation</element>
+        <element>B: sphere from fiducial list</element>
+      </string-enumeration>
+
+      <geometry fileExtensions=".ply">
+        <label>A: mesh from segmentation</label>
+        <description>
+          Mesh obtained from a segmentation of the tumor in the MRI
+        </description>
+        <longflag>mrTumorSegmented</longflag>
+        <channel>input</channel>
+      </geometry>
+
+      <point>
+        <label>B: fiducial list</label>
+        <longflag>mrTumorFiducial</longflag>
+        <description>
+          Markups list containing one fiducial representing the center of the tumor
+        </description>
+      </point>
+
+      <float>
+        <label>B: sphere radius</label>
+        <description>
+          Radius in mm of the sphere used as a representation of the tumor
+        </description>
+        <longflag>tumorRadius</longflag>
+        <default>5</default>
+      </float>
+    </parameters>
+
+  <!-- Supine -->
+    <parameters advanced="true">
+      <label>Supine data</label>
+
+      <point multiple="true">
+        <label>Nipples fiducials list</label>
+        <longflag>ctFiducials</longflag>
+      </point>
+
+      <string-enumeration>
+        <label>Choose a source for the surface mesh</label>
+        <description>
+          In a real case there is no CT, so only option A would be possible
+        </description>
+        <longflag>ctMeshEnumeration</longflag>
+        <default>A: use existing mesh</default>
+        <element>A: use existing mesh</element>
+        <element>B: generate mesh from input volume</element>
+      </string-enumeration>
+
+      <geometry fileExtensions=".ply">
+        <label>A: input surface</label>
+        <description>
+          Obtained from the laser scan or, if available, CT segmentation. It should contain only one connected component
+        </description>
+        <longflag>ctSurfaceMeshIn</longflag>
+        <channel>input</channel>
+      </geometry>
+
+      <image>
+        <label>B: input volume</label>
+        <description>In case a supine CT is available</description>
+        <longflag>ctInputVolume</longflag>
+        <channel>input</channel>
+      </image>
+
+      <region>
+        <label>B: ROI</label>
+        <description>
+          Slicer annotation node. It is recommended to use the Volume Rendering module to create it
+        </description>
+        <longflag>ctROI</longflag>
+      </region>
+
+      <boolean>
+        <label>Subsample mesh</label>
+        <description>
+          Choose whether you want to subsample the mesh in order to reduce computation time or not
+        </description>
+        <longflag>ctResample</longflag>
+        <default>false</default>
+      </boolean>
+
+      <double>
+        <label>Final number of nodes</label>
+        <description>
+          Approximated final number of nodes after subsampling
+        </description>
+        <longflag>ctNumberOfNodes</longflag>
+        <default>10000</default>
+        <constraints>
+          <minimum>1000</minimum>
+          <maximum>1.e5</maximum>
+          <step>1000</step>
+        </constraints>
+      </double>
+
+      <string-enumeration>
+        <label>Tumor visualization</label>
+        <description>
+          Choose whether you want to use a mesh from the CT tumor segmentation or the same mesh that is used for the tumor in prone position
+        </description>
+        <longflag>ctTumorType</longflag>
+        <default>A: mesh from segmentation</default>
+        <element>A: mesh from segmentation</element>
+        <element>B: same mesh as supine</element>
+      </string-enumeration>
+
+      <geometry fileExtensions=".ply">
+        <label>A: mesh from segmentation</label>
+        <description>
+          Mesh obtained from a segmentation of the tumor in the CT
+        </description>
+        <longflag>ctTumorSegmented</longflag>
+        <channel>input</channel>
+      </geometry>
+
+      <point>
+        <label>B: fiducial list</label>
+        <longflag>ctTumorFiducial</longflag>
+        <description>
+          Markups list containing one fiducial representing the center of the tumor
+        </description>
+      </point>
+    </parameters>
+
+  <!-- Deformation-->
+    <parameters advanced="true">
+      <label>Deformation parameters</label>
+
+      <string-enumeration>
+        <label>Boundary</label>
+        <description>
+          Choose whether you want the boundaries of the prone mesh to be fixed or dragged by the moving nodes.
+        </description>
+        <longflag>deformationBoundary</longflag>
+        <default>Free</default>
+        <element>Free</element>
+        <element>Fixed</element>
+      </string-enumeration>
+
+      <string-enumeration>
+        <label>Initialization</label>
+        <description>
+          Choose how the meshes are aligned before deformation. It matters only if the boundaries are fixed
+        </description>
+        <longflag>initialization</longflag>
+        <default>Mesh centroid</default>
+        <element>Point between nipples</element>
+        <element>Mesh centroid</element>
+      </string-enumeration>
+
+      <string-enumeration>
+        <label>Adjacency matrix</label>
+        <description>
+          Choose how the weights of the adjacency matrix will be calculated. See Gabriel Peyre's Toolbox Graph for more info.
+        </description>
+        <longflag>deformationLaplacian</longflag>
+        <default>Conformal</default>
+        <element>Combinatorial</element>
+        <element>Distance</element>
+        <element>Conformal</element>
+      </string-enumeration>
+
+      <boolean>
+        <label>Symmetrize</label>
+        <description>
+          Choose whether the laplacian matrix is symmetric or not
+        </description>
+        <longflag>symmetrize</longflag>
+        <default>true</default>
+      </boolean>
+
+      <boolean>
+        <label>Normalize</label>
+        <description>
+          Choose whether the laplacian matrix is normalized or not
+        </description>
+        <longflag>normalize</longflag>
+        <default>false</default>
+      </boolean>
+
+      <double>
+        <label>Distance between fiducials (mm)</label>
+        <description>
+          Separation between fiducials. It is always the same for medial, cranial and caudal directions.
+        </description>
+        <longflag>distanceBetweenFiducials</longflag>
+        <default>15</default>
+        <constraints>
+          <minimum>1</minimum>
+          <maximum>100</maximum>
+          <step>1</step>
+        </constraints>
+      </double>
+    </parameters>
+
+
+
+  <!-- OUTPUT -->
+
+  <!-- Meshes -->
+    <parameters advanced="true">
+      <label>Output nodes</label>
+
+      <directory>
+        <label>Data folder</label>
+        <description>
+          Folder containing patients' data
+        </description>
+        <longflag>dataDir</longflag>
+        <channel>input</channel>
+        <default>/Users/fernando/Dropbox/MUIB/TFM/data/</default>
+      </directory>
+
+      <string>
+        <label>Patient ID</label>
+        <longflag>patientID</longflag>
+        <channel>input</channel>
+      </string>
+
+      <string-enumeration>
+        <label>Meshes to be written</label>
+        <description>
+          <![CDATA[ An enumeration of strings ]]>
+        </description>
+        <longflag>meshWriteEnumeration</longflag>
+        <default>All</default>
+        <element>All</element>
+        <element>Only deformed and tumor</element>
+        <element>None</element>
+      </string-enumeration>
+
+      <geometry fileExtensions=".ply">
+        <label>Prone surface</label>
+        <description>Choose or create the model of the prone surface</description>
+        <longflag>mrSurfaceMesh</longflag>
+        <channel>output</channel>
+      </geometry>
+
+      <geometry fileExtensions=".ply">
+        <label>Supine surface</label>
+        <description>Choose or create the model of the supine surface</description>
+        <longflag>ctSurfaceMesh</longflag>
+        <channel>output</channel>
+      </geometry>
+
+      <geometry fileExtensions=".ply">
+        <label>Deformed mesh</label>
+        <description>Choose or create the model of the deformed mesh</description>
+        <longflag>mrDeformed</longflag>
+        <channel>output</channel>
+      </geometry>
+
+      <geometry fileExtensions=".ply">
+        <label>Estimated tumor</label>
+        <description>
+          Choose or create the model of the estimated tumor
+        </description>
+        <longflag>estimatedTumor</longflag>
+        <channel>output</channel>
+      </geometry>
+
+      <geometry fileExtensions=".ply">
+        <label>Tumor in prone position</label>
+        <description>
+          Choose or create the model of the tumor in prone position
+        </description>
+        <longflag>mrTumorWrite</longflag>
+        <channel>output</channel>
+      </geometry>
+
+      <geometry fileExtensions=".ply">
+        <label>Tumor in supine position</label>
+        <description>
+          Choose or create the model of the tumor in supine position
+        </description>
+        <longflag>ctTumorWrite</longflag>
+        <channel>output</channel>
+      </geometry>
+
+      <transform type="linear" fileExtensions=".txt">
+        <label>Initialization transform</label>
+        <description>
+          Choose or create the node of the initialization transform
+        </description>
+        <longflag>mr2ctTransform</longflag>
+        <channel>output</channel>
+      </transform>
+    </parameters>
+
+  <!-- Measurements -->
+    <parameters advanced="true">
+      <label>Quantitative results</label>
+
+      <string>
+        <label>Error (mm):</label>
+        <description>
+          Calculated using meshes centroids
+        </description>
+        <name>error</name>
+        <channel>output</channel>
+      </string>
+
+      <string>
+        <label>Preoperative mesh (s):</label>
+        <name>t_meshMR</name>
+        <channel>output</channel>
+      </string>
+
+      <string>
+        <label>Intraoperative mesh (s):</label>
+        <name>t_meshCT</name>
+        <channel>output</channel>
+      </string>
+
+      <string>
+        <label>Geodesic distances (s):</label>
+        <name>t_geodesicFiducials</name>
+        <channel>output</channel>
+      </string>
+
+      <string>
+        <label>Laplacian deformation (s):</label>
+        <name>t_deformation</name>
+        <channel>output</channel>
+      </string>
+
+      <string>
+        <label>Tumor estimation (s):</label>
+        <name>t_tumor</name>
+        <channel>output</channel>
+      </string>
+
+      <string>
+        <label>Write output meshes (s):</label>
+        <name>t_writeMeshes</name>
+        <channel>output</channel>
+      </string>
+
+      <string>
+        <label>TOTAL (s):</label>
+        <name>t_total</name>
+        <channel>output</channel>
+      </string>
+    </parameters>
+</executable>
